@@ -1,0 +1,5 @@
+{
+  "name": "WebGym 3D",
+  "description": "An interactive 3D gym scene rendered in the browser using WebGL and React Three Fiber. Features clickable characters with audio greetings.",
+  "requestFramePermissions": []
+}
