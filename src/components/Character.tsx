@@ -1,36 +1,97 @@
-import React, { useRef, useState, useEffect } from "react";
-import { useFrame } from "@react-three/fiber";
-import { playRandomGreeting } from "../utils/audio";
+import React, { useRef, useState, useEffect, useMemo } from "react";
+import { useFrame, useGraph } from "@react-three/fiber";
+import { useGLTF, useAnimations, Text } from "@react-three/drei";
 import * as THREE from "three";
-import { Text } from "@react-three/drei";
+import { SkeletonUtils } from "three-stdlib";
+import { playRandomGreeting } from "../utils/audio";
+import { useStore } from "../store";
 
 interface CharacterProps {
   id: string;
   position: [number, number, number];
   rotation?: [number, number, number];
-  color: string;
   pose: "standing" | "sitting";
 }
+
+const MODEL_URL =
+  "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/models/gltf/Soldier.glb";
 
 export const Character: React.FC<CharacterProps> = ({
   id,
   position,
   rotation = [0, 0, 0],
-  color,
   pose,
 }) => {
   const groupRef = useRef<THREE.Group>(null);
-  const headRef = useRef<THREE.Mesh>(null);
+  const headRef = useRef<THREE.Object3D>(null);
   const [hovered, setHovered] = useState(false);
   const [animating, setAnimating] = useState(false);
   const animationTime = useRef(0);
+  const muted = useStore((state) => state.muted);
+
+  // Load model and animations
+  const { scene, materials, animations } = useGLTF(MODEL_URL);
+
+  // Clone the scene for multiple instances
+  const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
+  const { nodes } = useGraph(clone);
+
+  const { actions, mixer } = useAnimations(animations, groupRef);
+
+  useEffect(() => {
+    // Enable shadows for all meshes in the cloned scene
+    clone.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+
+    // Find the head bone for interaction and look-at
+    headRef.current = clone.getObjectByName("mixamorigHead") || null;
+
+    // Adjust pose if sitting
+    if (pose === "sitting") {
+      const leftUpLeg = clone.getObjectByName("mixamorigLeftUpLeg");
+      const rightUpLeg = clone.getObjectByName("mixamorigRightUpLeg");
+      const leftLeg = clone.getObjectByName("mixamorigLeftLeg");
+      const rightLeg = clone.getObjectByName("mixamorigRightLeg");
+
+      if (leftUpLeg) leftUpLeg.rotation.x -= Math.PI / 2;
+      if (rightUpLeg) rightUpLeg.rotation.x -= Math.PI / 2;
+      if (leftLeg) leftLeg.rotation.x += Math.PI / 2;
+      if (rightLeg) rightLeg.rotation.x += Math.PI / 2;
+
+      // Move down slightly
+      clone.position.y -= 0.6;
+    }
+
+    // Play idle animation
+    if (actions["Idle"]) {
+      actions["Idle"].reset().fadeIn(0.5).play();
+    }
+
+    return () => {
+      mixer.stopAllAction();
+    };
+  }, [clone, actions, mixer, pose]);
 
   const handleClick = (e: any) => {
     e.stopPropagation();
-    if (!animating) {
+    if (!animating && groupRef.current) {
       setAnimating(true);
       animationTime.current = 0;
-      playRandomGreeting();
+
+      // Play audio
+      const camera = e.camera;
+      const charPos = new THREE.Vector3();
+      groupRef.current.getWorldPosition(charPos);
+      playRandomGreeting(camera.position, charPos, muted);
+
+      // Set camera target to look at the character's head
+      useStore
+        .getState()
+        .setCameraTarget([charPos.x, charPos.y + 1.5, charPos.z]);
     }
   };
 
@@ -48,18 +109,54 @@ export const Character: React.FC<CharacterProps> = ({
         setAnimating(false);
         headRef.current.rotation.set(0, 0, 0);
       }
-    } else if (headRef.current) {
-      // Idle breathing animation
-      const t = state.clock.getElapsedTime();
-      headRef.current.position.y =
-        (pose === "standing" ? 1.4 : 0.8) +
-        Math.sin(t * 2 + position[0]) * 0.02;
-    }
+    } else if (headRef.current && hovered && !animating) {
+      // Look at camera when hovered
+      const target = new THREE.Vector3();
+      state.camera.getWorldPosition(target);
 
-    // Body breathing
-    if (groupRef.current && !animating) {
-      const t = state.clock.getElapsedTime();
-      groupRef.current.scale.y = 1 + Math.sin(t * 2 + position[0]) * 0.01;
+      // Convert world target to local space of the head's parent
+      if (headRef.current.parent) {
+        headRef.current.parent.worldToLocal(target);
+      }
+
+      // Smoothly look at target
+      const currentRotation = new THREE.Quaternion().copy(
+        headRef.current.quaternion,
+      );
+      headRef.current.lookAt(target);
+      const targetRotation = new THREE.Quaternion().copy(
+        headRef.current.quaternion,
+      );
+
+      headRef.current.quaternion.slerpQuaternions(
+        currentRotation,
+        targetRotation,
+        0.1,
+      );
+
+      // Constrain rotation to avoid exorcist neck
+      headRef.current.rotation.z = 0;
+      headRef.current.rotation.x = THREE.MathUtils.clamp(
+        headRef.current.rotation.x,
+        -0.5,
+        0.5,
+      );
+      headRef.current.rotation.y = THREE.MathUtils.clamp(
+        headRef.current.rotation.y,
+        -0.8,
+        0.8,
+      );
+    } else if (headRef.current && !animating) {
+      // Smoothly return to neutral
+      const currentRotation = new THREE.Quaternion().copy(
+        headRef.current.quaternion,
+      );
+      const neutralRotation = new THREE.Quaternion();
+      headRef.current.quaternion.slerpQuaternions(
+        currentRotation,
+        neutralRotation,
+        0.05,
+      );
     }
   });
 
@@ -70,24 +167,19 @@ export const Character: React.FC<CharacterProps> = ({
     };
   }, [hovered]);
 
-  const bodyY = pose === "standing" ? 0.6 : 0.3;
-  const headY = pose === "standing" ? 1.4 : 0.8;
-  const bodyHeight = pose === "standing" ? 1.2 : 0.6;
-
   return (
-    <group ref={groupRef} position={position} rotation={rotation}>
-      {/* Body */}
-      <mesh position={[0, bodyY, 0]} castShadow receiveShadow>
-        <capsuleGeometry args={[0.25, bodyHeight - 0.5, 4, 16]} />
-        <meshStandardMaterial color={color} roughness={0.7} />
-      </mesh>
+    <group
+      ref={groupRef}
+      position={position}
+      rotation={rotation}
+      dispose={null}
+    >
+      <primitive object={clone} />
 
-      {/* Head (Clickable Hotspot) */}
+      {/* Invisible interaction hotspot over the head */}
       <mesh
-        ref={headRef}
-        position={[0, headY, 0]}
-        castShadow
-        receiveShadow
+        position={[0, pose === "standing" ? 1.6 : 1.0, 0]}
+        visible={false}
         onClick={handleClick}
         onPointerOver={(e) => {
           e.stopPropagation();
@@ -98,38 +190,26 @@ export const Character: React.FC<CharacterProps> = ({
           setHovered(false);
         }}
       >
-        <sphereGeometry args={[0.2, 32, 32]} />
-        <meshStandardMaterial
-          color="#ffccaa"
-          roughness={0.4}
-          emissive={hovered ? "#444444" : "#000000"}
-        />
-
-        {/* Eyes */}
-        <mesh position={[-0.07, 0.05, 0.17]}>
-          <sphereGeometry args={[0.03, 16, 16]} />
-          <meshBasicMaterial color="#000000" />
-        </mesh>
-        <mesh position={[0.07, 0.05, 0.17]}>
-          <sphereGeometry args={[0.03, 16, 16]} />
-          <meshBasicMaterial color="#000000" />
-        </mesh>
-
-        {/* Hover Indicator */}
-        {hovered && (
-          <Text
-            position={[0, 0.4, 0]}
-            fontSize={0.15}
-            color="white"
-            anchorX="center"
-            anchorY="middle"
-            outlineWidth={0.02}
-            outlineColor="black"
-          >
-            Click to talk
-          </Text>
-        )}
+        <sphereGeometry args={[0.3, 16, 16]} />
+        <meshBasicMaterial color="red" wireframe />
       </mesh>
+
+      {/* Hover Indicator */}
+      {hovered && (
+        <Text
+          position={[0, pose === "standing" ? 2.1 : 1.5, 0]}
+          fontSize={0.15}
+          color="white"
+          anchorX="center"
+          anchorY="middle"
+          outlineWidth={0.02}
+          outlineColor="black"
+        >
+          Click to talk
+        </Text>
+      )}
     </group>
   );
 };
+
+useGLTF.preload(MODEL_URL);

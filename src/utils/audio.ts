@@ -1,3 +1,5 @@
+import * as THREE from "three";
+
 const greetings = [
   "Welcome to the gym!",
   "Let's get a pump going.",
@@ -9,8 +11,18 @@ const greetings = [
   "Hydrate between sets.",
 ];
 
-export const playRandomGreeting = () => {
-  if (!window.speechSynthesis) return;
+let lastSpeechTime = 0;
+
+export const playRandomGreeting = (
+  cameraPosition: THREE.Vector3,
+  characterPosition: THREE.Vector3,
+  muted: boolean,
+) => {
+  if (muted || !window.speechSynthesis) return;
+
+  const now = Date.now();
+  if (now - lastSpeechTime < 2000) return; // Cooldown to prevent spam
+  lastSpeechTime = now;
 
   // Cancel any ongoing speech
   window.speechSynthesis.cancel();
@@ -28,6 +40,12 @@ export const playRandomGreeting = () => {
 
   utterance.rate = 0.9 + Math.random() * 0.2;
   utterance.pitch = 0.8 + Math.random() * 0.4;
+
+  // Calculate spatial volume
+  const distance = cameraPosition.distanceTo(characterPosition);
+  const maxDistance = 15;
+  const volume = Math.max(0, 1 - distance / maxDistance);
+  utterance.volume = volume;
 
   window.speechSynthesis.speak(utterance);
 };

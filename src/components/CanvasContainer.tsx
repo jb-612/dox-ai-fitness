@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Scene } from "./Scene";
 import { UIOverlay } from "./UIOverlay";
+import { useStore } from "../store";
 
 // Simple WebGL detection
 const isWebGLAvailable = () => {
@@ -18,6 +19,7 @@ const isWebGLAvailable = () => {
 
 export const CanvasContainer: React.FC = () => {
   const [webglSupported, setWebglSupported] = useState(true);
+  const quality = useStore((state) => state.quality);
 
   useEffect(() => {
     setWebglSupported(isWebGLAvailable());
@@ -43,7 +45,13 @@ export const CanvasContainer: React.FC = () => {
   return (
     <div className="relative h-screen w-full bg-zinc-900 overflow-hidden">
       <UIOverlay />
-      <Canvas shadows dpr={[1, 2]} gl={{ antialias: true }}>
+      <Canvas
+        shadows
+        dpr={quality === "high" ? [1, 2] : [1, 1]}
+        gl={{ antialias: true, powerPreference: "high-performance" }}
+        camera={{ position: [0, 2, 8], fov: 50 }}
+        onPointerMissed={() => useStore.getState().setCameraTarget(null)}
+      >
         <Scene />
       </Canvas>
     </div>

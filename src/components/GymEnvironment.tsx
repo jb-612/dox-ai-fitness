@@ -1,116 +1,211 @@
 import React from "react";
-import { Box } from "@react-three/drei";
+import {
+  Box,
+  Cylinder,
+  MeshReflectorMaterial,
+  RoundedBox,
+} from "@react-three/drei";
+import * as THREE from "three";
 
 export const GymEnvironment: React.FC = () => {
   return (
     <group>
-      {/* Floor */}
+      {/* Floor - Rubber Mat */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[20, 20]} />
-        <meshStandardMaterial color="#2a2a2a" roughness={0.8} metalness={0.2} />
+        <planeGeometry args={[30, 30]} />
+        <meshStandardMaterial color="#1a1a1a" roughness={0.9} metalness={0.1} />
       </mesh>
 
       {/* Back Wall */}
-      <mesh position={[0, 3, -10]} receiveShadow>
-        <boxGeometry args={[20, 6, 0.5]} />
-        <meshStandardMaterial color="#4a5568" roughness={0.9} />
+      <mesh position={[0, 4, -10]} receiveShadow>
+        <boxGeometry args={[30, 8, 0.5]} />
+        <meshStandardMaterial color="#2d3748" roughness={0.8} />
       </mesh>
 
       {/* Left Wall */}
-      <mesh position={[-10, 3, 0]} receiveShadow>
-        <boxGeometry args={[0.5, 6, 20]} />
-        <meshStandardMaterial color="#2d3748" roughness={0.9} />
+      <mesh position={[-15, 4, 0]} receiveShadow>
+        <boxGeometry args={[0.5, 8, 30]} />
+        <meshStandardMaterial color="#1a202c" roughness={0.9} />
       </mesh>
 
       {/* Right Wall */}
-      <mesh position={[10, 3, 0]} receiveShadow>
-        <boxGeometry args={[0.5, 6, 20]} />
-        <meshStandardMaterial color="#2d3748" roughness={0.9} />
+      <mesh position={[15, 4, 0]} receiveShadow>
+        <boxGeometry args={[0.5, 8, 30]} />
+        <meshStandardMaterial color="#1a202c" roughness={0.9} />
       </mesh>
 
-      {/* Mirror on Back Wall */}
-      <mesh position={[0, 2.5, -9.7]} receiveShadow>
-        <boxGeometry args={[12, 3, 0.1]} />
-        <meshStandardMaterial color="#e2e8f0" roughness={0.1} metalness={0.9} />
+      {/* Large Mirror on Back Wall */}
+      <mesh position={[0, 3, -9.7]} receiveShadow>
+        <planeGeometry args={[16, 4]} />
+        <MeshReflectorMaterial
+          blur={[300, 100]}
+          resolution={1024}
+          mixBlur={1}
+          mixStrength={50}
+          roughness={0.05}
+          depthScale={1.2}
+          minDepthThreshold={0.4}
+          maxDepthThreshold={1.4}
+          color="#a0aec0"
+          metalness={0.8}
+          mirror={1}
+        />
       </mesh>
 
       {/* Gym Props - Bench 1 */}
       <group position={[-4, 0, -4]} rotation={[0, Math.PI / 4, 0]}>
+        {/* Frame */}
         <Box
-          args={[0.6, 0.4, 1.5]}
+          args={[0.4, 0.4, 1.4]}
           position={[0, 0.2, 0]}
           castShadow
           receiveShadow
         >
-          <meshStandardMaterial color="#1a202c" />
+          <meshStandardMaterial
+            color="#2d3748"
+            metalness={0.8}
+            roughness={0.2}
+          />
         </Box>
-        <Box
-          args={[0.6, 0.8, 0.1]}
-          position={[0, 0.6, -0.7]}
+        {/* Pad */}
+        <RoundedBox
+          args={[0.5, 0.1, 1.5]}
+          position={[0, 0.45, 0]}
+          radius={0.05}
+          smoothness={4}
           castShadow
           receiveShadow
         >
-          <meshStandardMaterial color="#1a202c" />
-        </Box>
+          <meshStandardMaterial color="#111" roughness={0.7} />
+        </RoundedBox>
+        {/* Backrest */}
+        <RoundedBox
+          args={[0.5, 0.8, 0.1]}
+          position={[0, 0.85, -0.7]}
+          radius={0.05}
+          smoothness={4}
+          castShadow
+          receiveShadow
+        >
+          <meshStandardMaterial color="#111" roughness={0.7} />
+        </RoundedBox>
       </group>
 
       {/* Gym Props - Bench 2 */}
       <group position={[5, 0, -2]} rotation={[0, -Math.PI / 6, 0]}>
         <Box
-          args={[0.6, 0.4, 1.5]}
+          args={[0.4, 0.4, 1.4]}
           position={[0, 0.2, 0]}
           castShadow
           receiveShadow
         >
-          <meshStandardMaterial color="#1a202c" />
+          <meshStandardMaterial
+            color="#2d3748"
+            metalness={0.8}
+            roughness={0.2}
+          />
         </Box>
+        <RoundedBox
+          args={[0.5, 0.1, 1.5]}
+          position={[0, 0.45, 0]}
+          radius={0.05}
+          smoothness={4}
+          castShadow
+          receiveShadow
+        >
+          <meshStandardMaterial color="#111" roughness={0.7} />
+        </RoundedBox>
       </group>
 
       {/* Dumbbell Rack */}
       <group position={[8, 0, -8]}>
-        <Box args={[3, 1, 0.6]} position={[0, 0.5, 0]} castShadow receiveShadow>
+        {/* Rack Frame */}
+        <Box
+          args={[4, 1.2, 0.6]}
+          position={[0, 0.6, 0]}
+          castShadow
+          receiveShadow
+        >
           <meshStandardMaterial
-            color="#718096"
-            metalness={0.6}
-            roughness={0.4}
+            color="#4a5568"
+            metalness={0.7}
+            roughness={0.3}
           />
         </Box>
         {/* Dumbbells on rack */}
-        {[-1, 0, 1].map((x, i) => (
-          <group key={i} position={[x, 1.1, 0]}>
+        {[-1.5, -0.5, 0.5, 1.5].map((x, i) => (
+          <group key={i} position={[x, 1.3, 0]}>
             <mesh rotation={[0, 0, Math.PI / 2]} castShadow>
-              <cylinderGeometry args={[0.05, 0.05, 0.4]} />
-              <meshStandardMaterial color="#a0aec0" metalness={0.8} />
+              <cylinderGeometry args={[0.04, 0.04, 0.4]} />
+              <meshStandardMaterial
+                color="#cbd5e0"
+                metalness={0.9}
+                roughness={0.1}
+              />
             </mesh>
-            <mesh position={[-0.2, 0, 0]} castShadow>
-              <cylinderGeometry args={[0.15, 0.15, 0.1]} />
-              <meshStandardMaterial color="#1a202c" />
-            </mesh>
-            <mesh position={[0.2, 0, 0]} castShadow>
-              <cylinderGeometry args={[0.15, 0.15, 0.1]} />
-              <meshStandardMaterial color="#1a202c" />
-            </mesh>
+            <Cylinder
+              args={[0.15, 0.15, 0.1, 6]}
+              position={[-0.2, 0, 0]}
+              rotation={[Math.PI / 2, 0, Math.PI / 2]}
+              castShadow
+            >
+              <meshStandardMaterial color="#1a202c" roughness={0.8} />
+            </Cylinder>
+            <Cylinder
+              args={[0.15, 0.15, 0.1, 6]}
+              position={[0.2, 0, 0]}
+              rotation={[Math.PI / 2, 0, Math.PI / 2]}
+              castShadow
+            >
+              <meshStandardMaterial color="#1a202c" roughness={0.8} />
+            </Cylinder>
           </group>
         ))}
       </group>
 
       {/* Yoga Mats */}
-      <mesh
+      <RoundedBox
+        args={[1.2, 0.02, 2.5]}
         position={[-6, 0.01, 4]}
-        rotation={[-Math.PI / 2, 0, Math.PI / 8]}
+        rotation={[0, Math.PI / 8, 0]}
+        radius={0.05}
         receiveShadow
       >
-        <planeGeometry args={[1, 2.5]} />
-        <meshStandardMaterial color="#9f7aea" roughness={0.9} />
-      </mesh>
-      <mesh
+        <meshStandardMaterial color="#6b46c1" roughness={0.9} />
+      </RoundedBox>
+      <RoundedBox
+        args={[1.2, 0.02, 2.5]}
         position={[-3, 0.01, 5]}
-        rotation={[-Math.PI / 2, 0, -Math.PI / 12]}
+        rotation={[0, -Math.PI / 12, 0]}
+        radius={0.05}
         receiveShadow
       >
-        <planeGeometry args={[1, 2.5]} />
-        <meshStandardMaterial color="#48bb78" roughness={0.9} />
-      </mesh>
+        <meshStandardMaterial color="#38a169" roughness={0.9} />
+      </RoundedBox>
+
+      {/* Kettlebells */}
+      <group position={[-8, 0, -6]}>
+        {[0, 1, 2].map((i) => (
+          <group key={i} position={[i * 0.6, 0.15, 0]}>
+            <mesh castShadow receiveShadow>
+              <sphereGeometry args={[0.15, 32, 32]} />
+              <meshStandardMaterial
+                color="#1a202c"
+                roughness={0.6}
+                metalness={0.4}
+              />
+            </mesh>
+            <mesh position={[0, 0.15, 0]} castShadow>
+              <torusGeometry args={[0.08, 0.03, 16, 32]} />
+              <meshStandardMaterial
+                color="#1a202c"
+                roughness={0.6}
+                metalness={0.4}
+              />
+            </mesh>
+          </group>
+        ))}
+      </group>
     </group>
   );
 };
