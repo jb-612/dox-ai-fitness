@@ -42,27 +42,26 @@ export const Scene: React.FC = () => {
   return (
     <>
       {/* Lighting */}
-      <ambientLight intensity={0.2} />
+      <ambientLight intensity={0.4} />
+      {/* Sunlight from the right windows */}
       <directionalLight
-        position={[5, 10, 5]}
-        intensity={1.5}
+        position={[15, 10, 5]}
+        intensity={2.5}
+        color="#ffffff"
         castShadow
         shadow-mapSize-width={quality === "high" ? 2048 : 1024}
         shadow-mapSize-height={quality === "high" ? 2048 : 1024}
-        shadow-bias={-0.0001}
+        shadow-bias={-0.0005}
+        shadow-camera-left={-15}
+        shadow-camera-right={15}
+        shadow-camera-top={15}
+        shadow-camera-bottom={-15}
       />
-      <pointLight
-        position={[-5, 5, -5]}
-        intensity={0.8}
-        color="#a0aec0"
-        castShadow
-      />
-      <pointLight
-        position={[5, 5, -5]}
-        intensity={0.8}
-        color="#a0aec0"
-        castShadow
-      />
+      {/* Fill light from the left */}
+      <directionalLight position={[-10, 5, 0]} intensity={0.5} color="#a0aec0" />
+      
+      {/* Indoor lights */}
+      <pointLight position={[0, 5, -5]} intensity={1.0} color="#ffffff" castShadow />
 
       <Suspense fallback={null}>
         <Environment preset="city" background blur={0.8} />
@@ -70,42 +69,42 @@ export const Scene: React.FC = () => {
         <GymEnvironment />
 
         {/* Characters */}
-        {/* 1. Standing near mirror */}
+        {/* 1. Standing near cable machine */}
         <Character
           id="char1"
-          position={[-2, 0, -7]}
+          position={[-4, 0, -1]}
           rotation={[0, Math.PI / 4, 0]}
           pose="standing"
         />
 
-        {/* 2. Sitting on Bench 1 */}
+        {/* 2. Sitting on Bench */}
         <Character
           id="char2"
-          position={[-4, 0.45, -4]}
+          position={[4, 0.45, -2]}
           rotation={[0, Math.PI / 4, 0]}
           pose="sitting"
         />
 
-        {/* 3. Standing near dumbbells */}
+        {/* 3. Standing near squat rack */}
         <Character
           id="char3"
-          position={[6, 0, -6]}
+          position={[7, 0, 3]}
           rotation={[0, -Math.PI / 3, 0]}
           pose="standing"
         />
 
-        {/* 4. Sitting on Yoga Mat */}
+        {/* 4. Standing near punching bag */}
         <Character
           id="char4"
-          position={[-6, 0.02, 4]}
+          position={[5, 0, -8]}
           rotation={[0, Math.PI / 8, 0]}
-          pose="sitting"
+          pose="standing"
         />
 
-        {/* 5. Standing in middle, looking towards camera */}
+        {/* 5. Standing near cardio */}
         <Character
           id="char5"
-          position={[2, 0, 1]}
+          position={[-1, 0, -10]}
           rotation={[0, -Math.PI / 8, 0]}
           pose="standing"
         />
@@ -130,7 +129,7 @@ export const Scene: React.FC = () => {
 
       {/* Post Processing */}
       {quality !== "low" && (
-        <EffectComposer enableNormalPass={false}>
+        <EffectComposer enableNormalPass={true}>
           <SSAO
             samples={quality === "high" ? 31 : 16}
             radius={0.1}
