@@ -1,10 +1,9 @@
 import React from "react";
-import { useProgress } from "@react-three/drei";
 import { useStore, QualityPreset } from "../store";
 import { Volume2, VolumeX, Settings, HelpCircle } from "lucide-react";
 
 export const UIOverlay: React.FC = () => {
-  const { progress, active } = useProgress();
+  const isLoaded = useStore((state) => state.isLoaded);
   const quality = useStore((state) => state.quality);
   const setQuality = useStore((state) => state.setQuality);
   const muted = useStore((state) => state.muted);
@@ -23,8 +22,7 @@ export const UIOverlay: React.FC = () => {
           </h1>
           <p className="text-white/80 text-sm mt-1 drop-shadow flex items-center gap-2">
             <HelpCircle size={14} />
-            Scroll to move in. Drag to look around. Click a character's head to
-            interact.
+            Use W, A, S, D or Arrows to move. Click and drag to look around.
           </p>
         </div>
 
@@ -60,15 +58,15 @@ export const UIOverlay: React.FC = () => {
         </div>
       </header>
 
-      {active && (
+      {!isLoaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/80 backdrop-blur-sm pointer-events-auto transition-opacity duration-500">
           <div className="flex flex-col items-center">
             <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
             <p className="text-white font-medium text-lg">
-              Loading Assets... {Math.round(progress)}%
+              Initializing Engine...
             </p>
             <p className="text-zinc-400 text-sm mt-2">
-              Downloading high-quality models and textures
+              Loading PlayCanvas WebGL context
             </p>
           </div>
         </div>
@@ -80,9 +78,7 @@ export const UIOverlay: React.FC = () => {
           <span>•</span>
           <span>HDR Lighting</span>
           <span>•</span>
-          <span>SSAO</span>
-          <span>•</span>
-          <span>React Three Fiber</span>
+          <span>PlayCanvas Engine</span>
         </div>
       </footer>
     </div>

@@ -4,12 +4,12 @@
  */
 
 import React from "react";
-import { CanvasContainer } from "./components/CanvasContainer";
+import { PlayCanvasApp } from "./components/PlayCanvasApp";
 
 export default function App() {
   return (
     <main className="h-screen w-screen bg-black">
-      <CanvasContainer />
+      <PlayCanvasApp />
     </main>
   );
 }
